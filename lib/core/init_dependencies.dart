@@ -8,12 +8,14 @@ import 'package:blog_app/features/auth/domain/usecases/current_user.dart';
 import 'package:blog_app/features/auth/domain/usecases/user_sign_in.dart';
 import 'package:blog_app/features/auth/domain/usecases/user_sign_up.dart';
 import 'package:blog_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:blog_app/features/blogs/data/datasources/blog_local_data_source.dart';
 import 'package:blog_app/features/blogs/data/datasources/blog_remote_data_source.dart';
 import 'package:blog_app/features/blogs/data/repositories/blog_repository_impl.dart';
 import 'package:blog_app/features/blogs/domain/repositories/blog_repository.dart';
 import 'package:blog_app/features/blogs/domain/usecase/get_all_blogs.dart';
 import 'package:blog_app/features/blogs/domain/usecase/upload_blog.dart';
 import 'package:blog_app/features/blogs/presentation/bloc/blog_bloc.dart';
+import 'package:hive/hive.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:get_it/get_it.dart';
@@ -28,6 +30,7 @@ Future<void> initDependencies() async {
     anonKey: AppSecrets.supabaseAnonKey,
   );
   serviceLocator.registerLazySingleton(() => supabase.client);
+  serviceLocator.registerLazySingleton(() => Hive.box('blogs'));
 
   serviceLocator.registerFactory(() => InternetConnection());
 
@@ -82,7 +85,14 @@ void _initBlog() {
         serviceLocator(),
       ),
     )
+    ..registerFactory<BlogLocalDataSource>(
+      () => BlogLocalDataSourceImpl(
+        serviceLocator(),
+      ),
+    )
     ..registerFactory<BlogRepository>(() => BlogRepositoryImpl(
+          serviceLocator(),
+          serviceLocator(),
           serviceLocator(),
         ))
     ..registerFactory(
